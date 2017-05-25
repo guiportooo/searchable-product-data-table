@@ -3,41 +3,60 @@ import logo from './logo.svg';
 import './App.css';
 
 const ProductRow = (props) => {
+  const name = props.product.stocked ?
+    props.product.name :
+    <span className='lbl-danger'>{props.product.name}</span>
+
   return (
-    <div className='productRow'>
-      <label>{props.name}</label> <label>{props.price}</label>
-    </div>
+    <tr>
+      <td>{name}</td>
+      <td>{props.product.price}</td>
+    </tr>
   )
 }
 
 const ProductCategoryRow = (props) => {
   return (
-    <div>
-      <label className='productCategory'>{props.name}</label>
-    </div>
+    <tr><th colSpan='2'>{props.category}</th></tr>
   )
 }
 
 const ProductTable = (props) => {
-  const mapProductRow = (category, products) => {
-    return products
-      .filter(product => product.category === category)
-      .map((product, index) =>
-        <ProductRow key={index} name={product.name} price={product.price} />
-      )
+  const shouldHideProduct = (product) =>
+    product.name.indexOf(props.filterText) === -1 || (!product.stocked && props.inStockOnly)
+
+  const mapProductRows = (products) => {
+    let rows = []
+    let lastCategory = null
+
+    products.forEach((product) => {
+      if (shouldHideProduct(product))
+        return
+
+      if (product.category !== lastCategory) {
+        rows.push(<ProductCategoryRow category={product.category} key={product.category} />)
+      }
+
+      rows.push(<ProductRow key={product.name} product={product} />)
+      lastCategory = product.category
+    })
+
+    return rows
   }
 
   return (
     <div>
-      <div className='productTableTitle'>
-        <label>Name</label> <label>Price</label>
-      </div>
-      <div className='productTable'>
-        <ProductCategoryRow name='Sporting Goods' />
-        {mapProductRow('Sporting Goods', props.products)}
-        <ProductCategoryRow name='Eletronics' />
-        {mapProductRow('Eletronics', props.products)}
-      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Price</th>
+          </tr>
+        </thead>
+        <tbody>
+          {mapProductRows(props.products)}
+        </tbody>
+      </table>
     </div>
   )
 }
@@ -45,62 +64,76 @@ const ProductTable = (props) => {
 const SearchBar = (props) => {
   return (
     <div>
-      <div>
-        <input type='text' placeholder='Search...' />
-      </div>
-      <div>
-        <input type='checkbox' /> Only show products in stock
-      </div>
+      <form>
+        <input type='text' placeholder='Search...' value={props.filterText} />
+        <p>
+          <input type='checkbox' checked={props.inStockOnly} />
+          {' '}
+          Only show products in stock
+      </p>
+      </form>
     </div>
   )
 }
 
-const FilterableProductTable = (props) => {
-  const products = [
-    {
-      category: 'Sporting Goods',
-      price: '$49.99',
-      stocked: true,
-      name: 'Football'
-    },
-    {
-      category: 'Sporting Goods',
-      price: '$9.99',
-      stocked: true,
-      name: 'Baseball'
-    },
-    {
-      category: 'Sporting Goods',
-      price: '$29.99',
-      stocked: false,
-      name: 'Basketball'
-    },
-    {
-      category: 'Eletronics',
-      price: '$99.99',
-      stocked: true,
-      name: 'iPod Touch'
-    },
-    {
-      category: 'Eletronics',
-      price: '$399.99',
-      stocked: false,
-      name: 'iPhone 5'
-    },
-    {
-      category: 'Eletronics',
-      price: '$199.99',
-      stocked: true,
-      name: 'Nexus 7'
+class FilterableProductTable extends React.Component {
+  constructor(props) {
+    super(props)
+
+    this.state = {
+      filterText: '',
+      inStockOnly: false
     }
-  ]
-  return (
-    <div>
-      <SearchBar />
-      <ProductTable products={products} />
-    </div>
-  )
+  }
+
+  render() {
+    return (
+      <div>
+        <SearchBar filterText={this.state.filterText} inStockOnly={this.state.inStockOnly} />
+        <ProductTable products={this.props.products} filterText={this.state.filterText} inStockOnly={this.state.inStockOnly} />
+      </div>
+    )
+  }
 }
+
+const products = [
+  {
+    category: 'Sporting Goods',
+    price: '$49.99',
+    stocked: true,
+    name: 'Football'
+  },
+  {
+    category: 'Sporting Goods',
+    price: '$9.99',
+    stocked: true,
+    name: 'Baseball'
+  },
+  {
+    category: 'Sporting Goods',
+    price: '$29.99',
+    stocked: false,
+    name: 'Basketball'
+  },
+  {
+    category: 'Eletronics',
+    price: '$99.99',
+    stocked: true,
+    name: 'iPod Touch'
+  },
+  {
+    category: 'Eletronics',
+    price: '$399.99',
+    stocked: false,
+    name: 'iPhone 5'
+  },
+  {
+    category: 'Eletronics',
+    price: '$199.99',
+    stocked: true,
+    name: 'Nexus 7'
+  }
+]
 
 class App extends Component {
   render() {
@@ -113,7 +146,7 @@ class App extends Component {
         <p className='App-intro'>
           To get started, edit <code>src/App.js</code> and save to reload!
         </p>
-        <FilterableProductTable />
+        <FilterableProductTable products={products} />
       </div>
     );
   }
